@@ -13,7 +13,7 @@ import scala.collection.JavaConverters._
 import com.quantifind.sumac.FieldArgs
 
 import org.apache.spark.{TaskContext, SparkContext}
-import org.apache.spark.executor.ExecutorPlugin
+import org.apache.spark.ExecutorPlugin
 import org.apache.spark.memory.SparkMemoryManagerHandle
 
 class MemoryMonitor(val args: MemoryMonitorArgs) {
@@ -349,36 +349,8 @@ class MemoryMonitorExecutorExtension extends ExecutorPlugin {
   }
   val pollingTask = new AtomicReference[ScheduledFuture[_]]()
 
-  override def taskStart(taskContext: TaskContext): Unit = {
-    if (args.stagesToPoll.contains(taskContext.stageId())) {
-      if (monitoredTaskCount.getAndIncrement() == 0) {
-        // TODO schedule thread polling
-        val task = scheduler.scheduleWithFixedDelay(new Runnable {
-          override def run(): Unit = {
-            val d = MemoryMonitor.dateFormat.format(System.currentTimeMillis())
-            println(s"Polled thread dump @ $d")
-            MemoryMonitor.showThreadDump(MemoryMonitor.getThreadInfo)
-          }
-        }, 0, args.threadDumpFreqMillis, TimeUnit.MILLISECONDS)
-        pollingTask.set(task)
-      }
-    }
-  }
+  override def init() {
 
-  override def onTaskFailure(context: TaskContext, error: Throwable): Unit = {
-    removeActiveTask(context)
-  }
-
-  override def onTaskCompletion(context: TaskContext): Unit = {
-    removeActiveTask(context)
-  }
-
-  private def removeActiveTask(context: TaskContext): Unit = {
-    if (args.stagesToPoll.contains(context.stageId())) {
-      if (monitoredTaskCount.decrementAndGet() == 0) {
-        pollingTask.get().cancel(false)
-      }
-    }
   }
 }
 
