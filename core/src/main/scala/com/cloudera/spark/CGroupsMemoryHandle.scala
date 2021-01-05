@@ -1,19 +1,25 @@
 package com.cloudera.spark
 
+import com.cloudera.spark.CGroupsMemoryHandle.cGroupMemoryStatPath
+
 import scala.io.Source
 
 class CGroupsMemoryHandle(cgroupMemStats: Seq[(String, Long)]) extends MemoryGetter {
 
-  override val namesAndReporting: Seq[(String, PeakReporting)] = cgroupMemStats.map(x => {
+  override val namesAndReporting: Seq[(String, PeakReporting)] = cgroupMemStats.map(x =>
     (x._1, IncrementBytes)
-  })
+  )
 
   override def values(dest: Array[Long], offset: Int): Unit = {
     var counter = 0
-    cgroupMemStats.foreach(x => {
-      dest(offset + counter) = x._2
+    Source.fromFile(cGroupMemoryStatPath).getLines
+      .map { line =>
+        val words = line.split(" ")
+        words{0} -> words{1}.toLong
+      }.toSeq.foreach{ case (_, metricValue) =>
+      dest(offset + counter) = metricValue
       counter += 1
-    })
+    }
   }
 }
 
@@ -24,10 +30,10 @@ object CGroupsMemoryHandle {
   def get(): Option[CGroupsMemoryHandle] = {
     if (new java.io.File(cGroupMemoryStatPath).exists) {
       val cgroupMemStats = Source.fromFile(cGroupMemoryStatPath).getLines
-        .map(line => {
+        .map { line =>
           val words = line.split(" ")
           words{0} -> words{1}.toLong
-        }).toSeq
+        }.toSeq
       Some(new CGroupsMemoryHandle(cgroupMemStats))
       } else {
         None
