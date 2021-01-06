@@ -13,9 +13,16 @@ class CGroupsMemoryHandle(cgroupMemStats: Seq[(String, Long)]) extends MemoryGet
   override def values(dest: Array[Long], offset: Int): Unit = {
     var counter = 0
     Source.fromFile(cGroupMemoryStatPath).getLines
-      .map { line =>
-        val words = line.split(" ")
-        words{0} -> words{1}.toLong
+      .flatMap { case line =>
+        try {
+          val words = line.split(" ")
+          Some(words{0} -> words{1}.toLong)
+        } catch {
+          case e: Exception => {
+            e.printStackTrace()
+            None
+          }
+        }
       }.toSeq.foreach{ case (_, metricValue) =>
       dest(offset + counter) = metricValue
       counter += 1
@@ -30,9 +37,16 @@ object CGroupsMemoryHandle {
   def get(): Option[CGroupsMemoryHandle] = {
     if (new java.io.File(cGroupMemoryStatPath).exists) {
       val cgroupMemStats = Source.fromFile(cGroupMemoryStatPath).getLines
-        .map { line =>
-          val words = line.split(" ")
-          words{0} -> words{1}.toLong
+        .flatMap { case line =>
+          try {
+            val words = line.split(" ")
+            Some(words{0} -> words{1}.toLong)
+          } catch {
+            case e: Exception => {
+              e.printStackTrace()
+              None
+            }
+          }
         }.toSeq
       Some(new CGroupsMemoryHandle(cgroupMemStats))
       } else {
