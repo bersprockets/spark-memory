@@ -31,7 +31,7 @@ object CGroupsMemoryHandle {
   // https://docs.docker.com/config/containers/runmetrics/
   val metrics = Seq("cache", "rss", "mapped_file", "pgpgin", "pgpgout", "swap", "active_anon", "inactive_anon",
       "active_file", "inactive_file", "unevictable", "hierarchical_memory_limit", "hierarchical_memsw_limit")
-      .flatMap { metric => Seq(metric, "total_" + metric)}
+    .flatMap { metric => Seq(metric, "total_" + metric)}
 
   val countMetrics = Set("pgpgin", "pgpgout", "total_pgpgin", "total_pgpgout")
 
@@ -44,7 +44,7 @@ object CGroupsMemoryHandle {
     }
 
   private def getMetricsSnapshot: Map[String, Long] = {
-    val memMappings = Source.fromFile(cGroupMemoryStatPath).getLines
+    Source.fromFile(cGroupMemoryStatPath).getLines
       .flatMap { case line =>
         try {
           val words = line.split(" ")
@@ -56,13 +56,6 @@ object CGroupsMemoryHandle {
           }
         }
       }.toMap
-
-    metrics.flatMap { metric =>
-      memMappings.get(metric) match {
-        case Some(value) => Seq((metric, value))
-        case None => Seq()
-      }
-    }.toMap
   }
 }
 
