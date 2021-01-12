@@ -19,6 +19,7 @@ import org.apache.spark.memory.SparkMemoryManagerHandle
 class MemoryMonitor(val args: MemoryMonitorArgs) {
   val nettyMemoryHandle = SparkNettyMemoryHandle.get()
   val sparkMemManagerHandle = SparkMemoryManagerHandle.get()
+  val cGroupsMemoryHandle = CGroupsMemoryHandle.get()
   val memoryBean = ManagementFactory.getMemoryMXBean
   val poolBeans = ManagementFactory.getMemoryPoolMXBeans.asScala
   val offHeapPoolBeans = poolBeans.filter { pool =>
@@ -37,7 +38,8 @@ class MemoryMonitor(val args: MemoryMonitorArgs) {
       offHeapPoolBeans.map(new PoolGetter(_)) ++
       bufferPoolsBeans.map(new BufferPoolGetter(_)) ++
       nettyMemoryHandle.toSeq ++
-      sparkMemManagerHandle.toSeq
+      sparkMemManagerHandle.toSeq ++
+      cGroupsMemoryHandle
 
   val namesAndReporting = getters.flatMap(_.namesAndReporting)
   val names = namesAndReporting.map(_._1)
